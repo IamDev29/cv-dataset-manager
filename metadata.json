@@ -1,0 +1,6 @@
+{
+  "name": "Boxel",
+  "description": "A powerful offline-first bounding box annotator and computer vision dataset compiler. Manage projects, assign train/val/test splits, perform local data augmentations, and export production-ready YOLO datasets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
