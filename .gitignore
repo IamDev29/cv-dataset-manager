@@ -1,26 +1,46 @@
+# Dependencies
 node_modules/
+.venv/
+venv/
+ENV/
+env/
+
+# Build & Bundles
 build/
 dist/
 coverage/
-.DS_Store
 *.log
+
+# Environment & Config
 .env*
 !.env.example
+.vscode/
+.idea/
 
-# Python
+# OS Artifacts
+.DS_Store
+Thumbs.db
+
+# Python & Caches
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-# Database
+# Local SQLite Database & Storage
 *.db
+*.sqlite
+*.sqlite3
 boxel.db
 
-# Training outputs & base weights
+# Model Weights & Training Runs
+models/
 runs/
 training_runs/
-yolov8n.pt
+*.pt
+*.onnx
 
-
+# Scratch & Temporary Test Files
+scratch/
