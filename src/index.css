@@ -1,27 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
-  /* Brand precision instrument palette */
-  --color-bg-dark: #14171C;
-  --color-surface-dark: #1C2128;
-  --color-hairline: #2A2F38;
-  --color-primary-dark: #E6E9EF;
-  --color-secondary-dark: #8B93A1;
-  --color-accent-blue: #3DA9FC;
-  --color-status-amber: #FFB020;
+  /* Backgrounds: deep, cool charcoal, NOT pure black */
+  --color-bg-base: #14171C;
+  --color-bg-elevated: #1B1F26;
+  --color-bg-surface: #181C22;
+  --color-bg-subtle: #101317;
+  --color-bg-card: #1A1E25;
+
+  /* Primary Action Accent: Single precise signal blue reserved for actions, focus rings, and links */
+  --color-primary: #3DA9FC;
+  --color-primary-hover: #2E98EB;
+  --color-primary-active: #1D85D7;
+  --color-primary-muted: rgba(61, 169, 252, 0.12);
+
+  /* Semantic Status Colors (Exactly two for status + destructive for dangerous actions) */
+  --color-status-success: #00E5A3;
+  --color-status-success-muted: rgba(0, 229, 163, 0.12);
+  --color-status-warning: #FFB020;
+  --color-status-warning-muted: rgba(255, 176, 32, 0.12);
+  --color-status-danger: #FF4D4D;
+  --color-status-danger-muted: rgba(255, 77, 77, 0.12);
+
+  /* Text hierarchy */
+  --color-text-primary: #E6E9EF;
+  --color-text-secondary: #8B93A1;
+  --color-text-muted: #5A6270;
+  --color-text-dim: #3F4652;
+
+  /* Borders & Hairlines */
+  --color-border-subtle: #1F242D;
+  --color-border-default: #2A2F38;
+  --color-border-strong: #3B4350;
+  --color-border-highlight: rgba(255, 255, 255, 0.08);
+
+  /* Elevation Shadows */
+  --shadow-elevation-low: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-elevation-mid: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 2px 5px -1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-elevation-high: 0 16px 36px -4px rgba(0, 0, 0, 0.7), 0 6px 12px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --shadow-elevation-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-glow-primary: 0 0 20px -2px rgba(61, 169, 252, 0.25);
+  --shadow-glow-success: 0 0 20px -2px rgba(0, 229, 163, 0.25);
+  --shadow-glow-warning: 0 0 20px -2px rgba(255, 176, 32, 0.25);
+
+  /* Motion Curves */
+  --ease-precision: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-precision);
+  --transition-smooth: 200ms var(--ease-precision);
 }
 
 /* Base style overrides */
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-bg-dark);
-  color: var(--color-primary-dark);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numbers: strict monospace font helper */
+.font-mono-numbers {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ambient background treatment (restrained radial glow mesh) */
+.ambient-bg {
+  background-color: #14171C;
+  background-image: 
+    radial-gradient(ellipse 60% 40% at 50% -10%, rgba(61, 169, 252, 0.04), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 90%, rgba(0, 229, 163, 0.02), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Glass panel styling */
+.glass-surface {
+  background-color: rgba(27, 31, 38, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Interactive card hover lift */
+.card-hover-lift {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevation-mid);
+  border-color: rgba(61, 169, 252, 0.3);
 }
 
 /* Custom scrollbars for precision feel */
@@ -35,11 +106,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-hairline);
+  background: var(--color-border-default);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-secondary-dark);
+  background: var(--color-text-secondary);
 }
+
 
