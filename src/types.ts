@@ -106,3 +106,41 @@ export interface SetMappingResponse {
   allClasses: ProjectClass[];
 }
 
+export interface StartTrainingRequest {
+  model_variant?: string;
+  epochs?: number;
+  imgsz?: number;
+  batch_size?: string | number;
+  output_formats?: string[];
+}
+
+export interface TrainingMetricEntry {
+  epoch: number;
+  box_loss?: number;
+  cls_loss?: number;
+  dfl_loss?: number;
+  mAP50?: number;
+  mAP50_95?: number;
+  total_loss?: number;
+  [key: string]: any;
+}
+
+export interface TrainingJob {
+  id: string;
+  projectId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  modelVariant: string;
+  epochs: number;
+  imgsz: number;
+  batchSize: string;
+  outputFormats: string[];
+  createdAt: number;
+  startedAt?: number | null;
+  completedAt?: number | null;
+  currentEpoch?: number | null;
+  metricsLog: TrainingMetricEntry[];
+  errorMessage?: string | null;
+  hasPt: boolean;
+  hasOnnx: boolean;
+}
+

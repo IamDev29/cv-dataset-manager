@@ -9,6 +9,7 @@ import {
   Sparkles,
   ChevronLeft,
   Layers,
+  Flame,
 } from 'lucide-react';
 import { IconRailItem } from '../ui';
 import BoxelLogo from '../BoxelLogo';
@@ -19,7 +20,8 @@ export type ProjectNavSection =
   | 'gallery'
   | 'annotate'
   | 'pipeline'
-  | 'ai';
+  | 'ai'
+  | 'train';
 
 export interface NavRailProps {
   activeSection: ProjectNavSection;
@@ -142,6 +144,15 @@ export default function NavRail({
             shortcut="6"
             onClick={() => onSelectSection('ai')}
             title="AI Model Assist (Key 6)"
+          />
+
+          <IconRailItem
+            icon={<Flame size={17} />}
+            label="Train Model"
+            isActive={activeSection === 'train'}
+            shortcut="7"
+            onClick={() => onSelectSection('train')}
+            title="Train YOLO Model (Key 7)"
           />
         </div>
       </div>

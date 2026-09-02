@@ -371,3 +371,58 @@ def run_inference(
         })
 
     return result
+
+
+# ─── .pt → .onnx Conversion Utility ──────────────────────────────────────────
+
+def convert_pt_to_onnx(
+    pt_path: str,
+    output_dir: str | None = None,
+    imgsz: int = 640,
+) -> str:
+    """Convert a YOLO .pt weights file to ONNX format.
+
+    Parameters
+    ----------
+    pt_path : str
+        Absolute path to the source ``.pt`` file.
+    output_dir : str, optional
+        Directory to place the exported ``.onnx`` file.  If *None*, the
+        export is written next to the source file (Ultralytics default).
+    imgsz : int
+        Input image size used during export (must match training).
+
+    Returns
+    -------
+    str
+        Absolute path to the generated ``.onnx`` file.
+
+    Raises
+    ------
+    RuntimeError
+        If the conversion fails for any reason.
+    """
+    try:
+        from ultralytics import YOLO
+        model = YOLO(pt_path)
+        # model.export() returns the path to the exported file
+        export_path = model.export(format='onnx', imgsz=imgsz)
+
+        if not export_path:
+            raise RuntimeError(f'ONNX export returned empty path for {pt_path}')
+
+        from pathlib import Path
+        exported = Path(str(export_path))
+
+        if output_dir:
+            import shutil
+            dest_dir = Path(output_dir)
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / exported.name
+            shutil.copy2(str(exported), str(dest))
+            return str(dest.resolve())
+
+        return str(exported.resolve())
+
+    except Exception as e:
+        raise RuntimeError(f'Failed to convert {pt_path} to ONNX: {e}') from e

@@ -9,7 +9,9 @@ import {
   AugmentRequest,
   Settings,
   BatchImageItem,
-  SetMappingResponse
+  SetMappingResponse,
+  TrainingJob,
+  StartTrainingRequest,
 } from './types';
 
 const API_BASE = ((import.meta as any)?.env?.VITE_API_BASE ?? '').replace(/\/$/, '');
@@ -288,6 +290,57 @@ export const api = {
       body: JSON.stringify({ boxIds: boxIds ?? [] }),
     });
     return handleResponse<ProjectImage>(res);
+  },
+
+  // ── Model Training ────────────────────────────────────────────────────────
+  async startTraining(projectId: string, req: StartTrainingRequest): Promise<TrainingJob> {
+    const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+    return handleResponse<TrainingJob>(res);
+  },
+
+  async listTrainingJobs(projectId: string): Promise<TrainingJob[]> {
+    const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs`);
+    return handleResponse<TrainingJob[]>(res);
+  },
+
+  async getTrainingJob(projectId: string, jobId: string): Promise<TrainingJob> {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs/${encodeURIComponent(jobId)}`
+    );
+    return handleResponse<TrainingJob>(res);
+  },
+
+  async cancelTrainingJob(projectId: string, jobId: string): Promise<TrainingJob> {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs/${encodeURIComponent(jobId)}/cancel`,
+      {
+        method: 'POST',
+      }
+    );
+    return handleResponse<TrainingJob>(res);
+  },
+
+  getTrainingDownloadUrl(projectId: string, jobId: string, format: 'pt' | 'onnx'): string {
+    return `${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs/${encodeURIComponent(jobId)}/download?format=${format}`;
+  },
+
+  async downloadTrainingOutput(projectId: string, jobId: string, format: 'pt' | 'onnx'): Promise<Blob> {
+    const res = await fetch(this.getTrainingDownloadUrl(projectId, jobId, format));
+    if (!res.ok) {
+      let errorDetail = `Download failed with status ${res.status}`;
+      try {
+        const errJson = await res.json();
+        if (errJson?.detail) {
+          errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+        }
+      } catch {}
+      throw new ApiError(errorDetail, res.status);
+    }
+    return res.blob();
   },
 };
 

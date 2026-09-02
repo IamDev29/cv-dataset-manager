@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from dotenv import load_dotenv
 from app.database import engine, Base
-from app.routers import projects, images, pipeline, ai_models
+from app.routers import projects, images, pipeline, ai_models, training
 import os
 
 load_dotenv()
@@ -31,6 +31,16 @@ with engine.connect() as conn:
 MODELS_DIR = Path(__file__).parent / 'models'
 MODELS_DIR.mkdir(exist_ok=True)
 
+# Ensure training runs storage directory exists
+TRAINING_RUNS_DIR = Path(__file__).parent / 'training_runs'
+TRAINING_RUNS_DIR.mkdir(exist_ok=True)
+
+# Recover any training jobs interrupted by server restart / reload / crash
+from app.services.training_service import recover_interrupted_jobs
+recovered = recover_interrupted_jobs()
+if recovered:
+    print(f"[startup] Recovered {recovered} interrupted training job(s).")
+
 app = FastAPI(title='Boxel CV Dataset Manager', version='2.0.0')
 
 app.add_middleware(
@@ -45,6 +55,7 @@ app.include_router(projects.router)
 app.include_router(images.router)
 app.include_router(pipeline.router)
 app.include_router(ai_models.router)
+app.include_router(training.router)
 
 DIST_DIR = Path(__file__).parent / 'dist'
 

@@ -18,3 +18,9 @@ venv/
 *.db
 boxel.db
 
+# Training outputs & base weights
+runs/
+training_runs/
+yolov8n.pt
+
+

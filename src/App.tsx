@@ -23,7 +23,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Project, BoundingBox, ImageSplit, ProjectImage, BatchImageItem } from './types';
+import { Project, BoundingBox, ImageSplit, ProjectImage, BatchImageItem, TrainingJob } from './types';
 import { api } from './api';
 import Annotator from './components/Annotator';
 import CornerBrackets from './components/CornerBrackets';
@@ -36,6 +36,7 @@ import ClassesImportView from './components/views/ClassesImportView';
 import GalleryView from './components/views/GalleryView';
 import PipelineView from './components/views/PipelineView';
 import AIAssistView from './components/views/AIAssistView';
+import TrainModelView from './components/views/TrainModelView';
 import DashboardView from './components/views/DashboardView';
 
 const CLASS_COLORS = [
@@ -62,7 +63,7 @@ const parseHashRoute = () => {
   const parts = hash.split('/');
   if (parts[0] === 'project' && parts[1]) {
     const projectId = parts[1];
-    const section = (['overview', 'classes', 'gallery', 'annotate', 'pipeline', 'ai'].includes(parts[2])
+    const section = (['overview', 'classes', 'gallery', 'annotate', 'pipeline', 'ai', 'train'].includes(parts[2])
       ? parts[2]
       : 'overview') as ProjectNavSection;
     return { projectId, section, isStyleGuide: false };
@@ -84,6 +85,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<ProjectNavSection>(initialRoute.section);
   const [showStyleGuide, setShowStyleGuide] = useState<boolean>(initialRoute.isStyleGuide);
   const [pipelineTab, setPipelineTab] = useState<'split' | 'augment' | 'export'>('split');
+  const [activeTrainingJob, setActiveTrainingJob] = useState<TrainingJob | null>(null);
 
   // Modal/Form states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -154,6 +156,38 @@ export default function App() {
       })
       .catch(err => console.error('Failed to load settings:', err));
   }, []);
+
+  // Check for active training jobs when project changes
+  useEffect(() => {
+    if (!activeProjectId) {
+      setActiveTrainingJob(null);
+      return;
+    }
+
+    api.listTrainingJobs(activeProjectId)
+      .then(jobs => {
+        const active = jobs.find(j => j.status === 'running' || j.status === 'queued');
+        setActiveTrainingJob(active || null);
+      })
+      .catch(err => console.warn('Failed to check active training jobs:', err));
+  }, [activeProjectId]);
+
+  // Polling loop for active training job status
+  useEffect(() => {
+    if (!activeProjectId || !activeTrainingJob) return;
+    if (activeTrainingJob.status !== 'running' && activeTrainingJob.status !== 'queued') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await api.getTrainingJob(activeProjectId, activeTrainingJob.id);
+        setActiveTrainingJob(updated);
+      } catch (err) {
+        console.warn('Error polling training job status:', err);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeProjectId, activeTrainingJob?.id, activeTrainingJob?.status]);
 
   // Handle project creation
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -1000,7 +1034,9 @@ export default function App() {
         <TopBar
           projectName={activeProject?.name}
           projectId={activeProject?.id}
-          activeSectionTitle={activeSection}
+          activeSectionTitle={activeSection === 'train' ? 'Train Model' : activeSection}
+          activeTrainingJob={activeTrainingJob}
+          onNavigateToTrain={() => navigateTo(activeProjectId, 'train')}
           onOpenStyleGuide={() => navigateTo(activeProjectId, activeSection, true)}
           onNavigateHome={() => navigateTo(null)}
         />
@@ -1169,6 +1205,27 @@ export default function App() {
                       const map = new Map(updatedImgs.map(i => [i.id, i]));
                       setImages(prev => prev.map(img => map.get(img.id) || img));
                     }}
+                    onUpdateProjectClasses={(newClasses) => {
+                      if (newClasses && activeProjectId) {
+                        setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, classes: newClasses } : p));
+                      }
+                    }}
+                  />
+                )}
+
+                {/* 6. TRAIN MODEL VIEW */}
+                {activeSection === 'train' && activeProject && (
+                  <TrainModelView
+                    project={activeProject}
+                    images={images}
+                    activeJob={activeTrainingJob}
+                    onActiveJobChange={setActiveTrainingJob}
+                    onNavigateToAnnotate={handleOpenAnnotatorFirstImage}
+                    onNavigateToPipeline={(tab) => {
+                      if (tab) setPipelineTab(tab);
+                      navigateTo(activeProjectId, 'pipeline');
+                    }}
+                    onNavigateToAIAssist={() => navigateTo(activeProjectId, 'ai')}
                     onUpdateProjectClasses={(newClasses) => {
                       if (newClasses && activeProjectId) {
                         setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, classes: newClasses } : p));
