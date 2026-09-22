@@ -1,12 +1,15 @@
 import React from 'react';
-import { ChevronRight, Database, ExternalLink } from 'lucide-react';
+import { ChevronRight, Database, ExternalLink, Flame } from 'lucide-react';
 import { Badge, Button } from '../ui';
 import BoxelLogo from '../BoxelLogo';
+import { TrainingJob } from '../../types';
 
 export interface TopBarProps {
   projectName?: string;
   projectId?: string;
   activeSectionTitle?: string;
+  activeTrainingJob?: TrainingJob | null;
+  onNavigateToTrain?: () => void;
   onOpenStyleGuide?: () => void;
   onNavigateHome?: () => void;
 }
@@ -15,6 +18,8 @@ export default function TopBar({
   projectName,
   projectId,
   activeSectionTitle,
+  activeTrainingJob,
+  onNavigateToTrain,
   onOpenStyleGuide,
   onNavigateHome,
 }: TopBarProps) {
@@ -82,6 +87,23 @@ export default function TopBar({
             <span className="hidden md:inline">Design System</span>
             <span className="md:hidden">Tokens</span>
           </Button>
+        )}
+
+        {activeTrainingJob && (
+          <button
+            type="button"
+            onClick={onNavigateToTrain}
+            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-[#FFB020]/15 border border-[#FFB020]/40 text-[#FFB020] font-mono text-[11px] hover:bg-[#FFB020]/25 transition-colors cursor-pointer"
+            title="Training in progress — click to view live telemetry"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FFB020] animate-ping" />
+            <Flame size={12} className="shrink-0 text-[#FFB020]" />
+            <span>
+              {activeTrainingJob.status === 'queued'
+                ? 'Training Queued...'
+                : `Training: Ep ${activeTrainingJob.currentEpoch ?? 0}/${activeTrainingJob.epochs}`}
+            </span>
+          </button>
         )}
 
         <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-[#14171C] border border-[#2A2F38] text-[#8B93A1] font-mono text-[11px]">

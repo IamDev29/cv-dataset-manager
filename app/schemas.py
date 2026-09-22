@@ -140,3 +140,33 @@ class AcceptSuggestionsRequest(BaseModel):
 
 class RejectSuggestionsRequest(BaseModel):
     boxIds: List[str]  # empty list means reject ALL
+
+# ─── Training schemas ─────────────────────────────────────────────────────────
+
+class StartTrainingRequest(BaseModel):
+    model_variant: str = "yolov8n"
+    epochs: int = 50
+    imgsz: int = 640
+    batch_size: str = "auto"                    # "auto" or numeric string
+    output_formats: List[str] = ["pt", "onnx"]
+
+class TrainingJobOut(BaseModel):
+    id: str
+    projectId: str
+    status: str                                  # queued|running|completed|failed|cancelled
+    modelVariant: str
+    epochs: int
+    imgsz: int
+    batchSize: str
+    outputFormats: List[str] = []
+    createdAt: float
+    startedAt: Optional[float] = None
+    completedAt: Optional[float] = None
+    currentEpoch: Optional[int] = None
+    metricsLog: List[Dict[str, Any]] = []
+    errorMessage: Optional[str] = None
+    hasPt: bool = False
+    hasOnnx: bool = False
+
+    class Config:
+        from_attributes = True

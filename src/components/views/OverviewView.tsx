@@ -12,6 +12,7 @@ import {
   Upload,
   Layers,
   Database,
+  Flame,
 } from 'lucide-react';
 import { ProjectNavSection } from '../layout/NavRail';
 
@@ -306,6 +307,23 @@ export default function OverviewView({
               <h4 className="font-sans font-semibold text-sm text-[#E6E9EF]">Augment & Export</h4>
               <p className="text-xs text-[#8B93A1] mt-0.5">
                 Generate geometric variations and download YOLO zip archive.
+              </p>
+            </div>
+          </Card>
+
+          <Card
+            elevation="low"
+            interactive
+            onClick={() => onNavigateSection('train')}
+            className="p-5 space-y-3"
+          >
+            <div className="w-9 h-9 rounded-lg bg-[#FFB020]/15 text-[#FFB020] flex items-center justify-center">
+              <Flame size={18} />
+            </div>
+            <div>
+              <h4 className="font-sans font-semibold text-sm text-[#E6E9EF]">Train Custom Model</h4>
+              <p className="text-xs text-[#8B93A1] mt-0.5">
+                Train YOLO detection models directly from the app with live metrics.
               </p>
             </div>
           </Card>
