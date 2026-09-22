@@ -46,11 +46,11 @@ app.include_router(images.router)
 app.include_router(pipeline.router)
 app.include_router(ai_models.router)
 
-STATIC_DIR = Path(__file__).parent / 'app' / 'static'
+DIST_DIR = Path(__file__).parent / 'dist'
 
-# Mount static files (CSS, JS)
-if STATIC_DIR.exists():
-    app.mount('/static', StaticFiles(directory=str(STATIC_DIR)), name='static')
+# Mount Vite production build assets (JS, CSS)
+if (DIST_DIR / 'assets').exists():
+    app.mount('/assets', StaticFiles(directory=str(DIST_DIR / 'assets')), name='assets')
 
 @app.get('/', include_in_schema=False)
 @app.get('/{full_path:path}', include_in_schema=False)
@@ -59,10 +59,10 @@ async def serve_spa(full_path: str = ''):
     if full_path.startswith('api/'):
         from fastapi import HTTPException
         raise HTTPException(status_code=404)
-    index = STATIC_DIR / 'index.html'
+    index = DIST_DIR / 'index.html'
     if index.exists():
         return FileResponse(str(index))
-    return {'error': 'Frontend not built'}
+    return {'error': 'Frontend not built. Run npm run build.'}
 
 if __name__ == '__main__':
     import uvicorn
