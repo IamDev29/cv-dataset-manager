@@ -10,6 +10,7 @@ build/
 dist/
 coverage/
 *.log
+*.spec.bak
 
 # Environment & Config
 .env*
