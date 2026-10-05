@@ -16,14 +16,22 @@ import webbrowser
 from pathlib import Path
 
 
-def is_boxel_running(url: str = "http://127.0.0.1:8000/api/projects", timeout: float = 1.0) -> bool:
+def is_boxel_running(url: str = "http://127.0.0.1:8000/api/projects", timeout: float = 2.5) -> bool:
     """Check if the Boxel FastAPI backend is currently running."""
+    import socket
+    # First check if port 8000 is open
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        if s.connect_ex(('127.0.0.1', 8000)) != 0:
+            return False
+    # Port is open; verify HTTP response
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "KayaDristhi-App"})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status in (200, 404)
     except Exception:
-        return False
+        # If port 8000 is already bound and listening, server is running
+        return True
 
 
 def get_repo_root() -> Path:
