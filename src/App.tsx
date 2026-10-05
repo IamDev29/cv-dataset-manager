@@ -28,7 +28,9 @@ import { api } from './api';
 import Annotator from './components/Annotator';
 import CornerBrackets from './components/CornerBrackets';
 import StyleGuide from './components/StyleGuide';
+import SpeciesModulesModal from './components/SpeciesModulesModal';
 import { Button, Card, Badge, StatTile } from './components/ui';
+
 import NavRail, { ProjectNavSection } from './components/layout/NavRail';
 import TopBar from './components/layout/TopBar';
 import OverviewView from './components/views/OverviewView';
@@ -86,11 +88,13 @@ export default function App() {
   const [showStyleGuide, setShowStyleGuide] = useState<boolean>(initialRoute.isStyleGuide);
   const [pipelineTab, setPipelineTab] = useState<'split' | 'augment' | 'export'>('split');
   const [activeTrainingJob, setActiveTrainingJob] = useState<TrainingJob | null>(null);
+  const [isGlobalSpeciesModalOpen, setIsGlobalSpeciesModalOpen] = useState<boolean>(false);
 
   // Modal/Form states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
 
   // Search & Filter state for dashboard
   const [searchQuery, setSearchQuery] = useState('');
@@ -1038,10 +1042,37 @@ export default function App() {
           activeTrainingJob={activeTrainingJob}
           onNavigateToTrain={() => navigateTo(activeProjectId, 'train')}
           onOpenStyleGuide={() => navigateTo(activeProjectId, activeSection, true)}
+          onOpenSpeciesRegistry={() => setIsGlobalSpeciesModalOpen(true)}
           onNavigateHome={() => navigateTo(null)}
         />
 
+        {/* GPU COMPETITION WARNING BANNER (APP-WIDE) */}
+        {activeTrainingJob && (activeTrainingJob.status === 'running' || activeTrainingJob.status === 'queued') && (
+          <div className="bg-[#FFB020]/10 border-b border-[#FFB020]/30 px-4 md:px-6 py-2.5 flex items-center justify-between text-xs text-[#FFB020] animate-fadeIn shrink-0">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-[#FFB020] animate-ping shrink-0" />
+              <AlertTriangle size={15} className="shrink-0 text-[#FFB020]" />
+              <span className="font-medium truncate">
+                Training in progress — avoid running the wildlife app at the same time (both compete for the same GPU).
+              </span>
+              <span className="hidden md:inline font-mono text-[11px] text-[#8B93A1] bg-[#14171C] px-2 py-0.5 rounded border border-[#2A2F38]">
+                {activeTrainingJob.modelVariant} &middot; Ep {activeTrainingJob.currentEpoch ?? 0}/{activeTrainingJob.epochs}
+              </span>
+            </div>
+            {activeProjectId && (
+              <button
+                type="button"
+                onClick={() => navigateTo(activeProjectId, 'train')}
+                className="font-mono text-[11px] underline hover:text-white cursor-pointer ml-3 shrink-0"
+              >
+                View Live Telemetry &rarr;
+              </button>
+            )}
+          </div>
+        )}
+
         <main className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col">
+
           {apiError && (
             <div className="mb-6 bg-red-950/30 border border-red-900/50 rounded-xl p-4 flex items-start justify-between text-red-400">
               <div className="flex items-start space-x-3">
@@ -1405,6 +1436,13 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* GLOBAL SPECIES MODULES REGISTRY MODAL */}
+      <SpeciesModulesModal
+        isOpen={isGlobalSpeciesModalOpen}
+        onClose={() => setIsGlobalSpeciesModalOpen(false)}
+      />
     </div>
   );
 }
+

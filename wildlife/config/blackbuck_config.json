@@ -1,0 +1,27 @@
+{
+  "_comment": "Blackbuck Census \u2014 no DetectionEnhancer \u2014 direct tiled inference",
+  "_hardware": "GTX 1650 4GB / RTX 5070 Ti 16GB (auto-selected)",
+  "model_path": "shared_models/blackbuck/active.pt",
+  "infer_every": 1,
+  "detection": {
+    "confidence": 0.18,
+    "iou": 0.4,
+    "min_area": 100,
+    "min_aspect": 0.3,
+    "max_aspect": 4.0,
+    "edge_buf": 6
+  },
+  "bytetrack": {
+    "track_buffer": 60,
+    "min_hits": 2,
+    "match_thresh": 0.15
+  },
+  "tiling": {
+    "enabled": true,
+    "grid_rows": 2,
+    "grid_cols": 2,
+    "overlap": 0.25,
+    "tile_size": 640,
+    "nms_iou": 0.4
+  }
+}

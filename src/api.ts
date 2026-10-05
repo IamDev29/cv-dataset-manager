@@ -342,6 +342,56 @@ export const api = {
     }
     return res.blob();
   },
+
+  // ── Species Modules & Active Models ───────────────────────────────────────
+  async listSpeciesModules(): Promise<SpeciesModule[]> {
+    const res = await fetch(`${API_BASE}/api/species-modules`);
+    return handleResponse<SpeciesModule[]>(res);
+  },
+
+  async createSpeciesModule(req: CreateSpeciesModuleRequest): Promise<SpeciesModule> {
+    const res = await fetch(`${API_BASE}/api/species-modules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+    return handleResponse<SpeciesModule>(res);
+  },
+
+  async deleteSpeciesModule(slug: string): Promise<{ ok: boolean; message?: string }> {
+    const res = await fetch(`${API_BASE}/api/species-modules/${encodeURIComponent(slug)}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<{ ok: boolean; message?: string }>(res);
+  },
+
+  async getSpeciesModelsStatus(): Promise<SpeciesModelStatus[]> {
+    const res = await fetch(`${API_BASE}/api/species-models`);
+    return handleResponse<SpeciesModelStatus[]>(res);
+  },
+
+  async activateTrainingJob(projectId: string, jobId: string, speciesSlug: string): Promise<TrainingJob> {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs/${encodeURIComponent(jobId)}/activate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ species_slug: speciesSlug }),
+      }
+    );
+    return handleResponse<TrainingJob>(res);
+  },
+
+  async deactivateTrainingJob(projectId: string, jobId: string): Promise<TrainingJob> {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(projectId)}/train/jobs/${encodeURIComponent(jobId)}/deactivate`,
+      {
+        method: 'POST',
+      }
+    );
+    return handleResponse<TrainingJob>(res);
+  },
 };
 
 export { ApiError };
+

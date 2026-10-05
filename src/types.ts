@@ -125,6 +125,35 @@ export interface TrainingMetricEntry {
   [key: string]: any;
 }
 
+export interface SpeciesModule {
+  id: string;
+  slug: string;
+  displayName: string;
+  wildlifeConfigRelpath: string;
+  createdAt: number;
+  hasActiveModel?: boolean;
+  activeJobId?: string | null;
+  activeProjectId?: string | null;
+}
+
+export interface CreateSpeciesModuleRequest {
+  slug: string;
+  display_name: string;
+  wildlife_config_relpath: string;
+}
+
+export interface SpeciesModelStatus {
+  speciesSlug: string;
+  displayName: string;
+  wildlifeConfigRelpath: string;
+  hasActiveModel: boolean;
+  activeJobId?: string | null;
+  activeProjectId?: string | null;
+  activeProjectName?: string | null;
+  activatedAt?: number | null;
+  metadata?: Record<string, any> | null;
+}
+
 export interface TrainingJob {
   id: string;
   projectId: string;
@@ -142,5 +171,8 @@ export interface TrainingJob {
   errorMessage?: string | null;
   hasPt: boolean;
   hasOnnx: boolean;
+  isActive?: boolean;
+  speciesSlug?: string | null;
 }
+
 

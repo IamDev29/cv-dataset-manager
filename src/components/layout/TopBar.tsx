@@ -11,6 +11,7 @@ export interface TopBarProps {
   activeTrainingJob?: TrainingJob | null;
   onNavigateToTrain?: () => void;
   onOpenStyleGuide?: () => void;
+  onOpenSpeciesRegistry?: () => void;
   onNavigateHome?: () => void;
 }
 
@@ -21,6 +22,7 @@ export default function TopBar({
   activeTrainingJob,
   onNavigateToTrain,
   onOpenStyleGuide,
+  onOpenSpeciesRegistry,
   onNavigateHome,
 }: TopBarProps) {
   return (
@@ -76,6 +78,19 @@ export default function TopBar({
 
       {/* Right side: Status badges & Style Guide */}
       <div className="flex items-center space-x-3 shrink-0">
+        {onOpenSpeciesRegistry && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenSpeciesRegistry}
+            className="text-xs text-[#8B93A1] hover:text-[#00E5A3]"
+            title="Wildlife Species Modules Registry"
+          >
+            <span className="hidden md:inline">Species Registry</span>
+            <span className="md:hidden">Species</span>
+          </Button>
+        )}
+
         {onOpenStyleGuide && (
           <Button
             variant="ghost"
@@ -88,6 +103,7 @@ export default function TopBar({
             <span className="md:hidden">Tokens</span>
           </Button>
         )}
+
 
         {activeTrainingJob && (
           <button

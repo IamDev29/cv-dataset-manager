@@ -39,6 +39,7 @@ boxel.db
 models/
 runs/
 training_runs/
+shared_models/
 *.pt
 *.onnx
 

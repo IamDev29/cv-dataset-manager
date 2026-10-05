@@ -1,0 +1,26 @@
+{
+  "_comment": "Olive Ridley Turtle module configuration. Edit values here; they become UI defaults.",
+  "model_path": "shared_models/turtle/active.pt",
+  "counting_zone": {
+    "line1_frac": 0.33,
+    "line2_frac": 1
+  },
+  "tiled_detection": {
+    "conf": 0.3,
+    "iou": 0.45,
+    "tile_w": 960,
+    "tile_h": 540,
+    "overlap": 0.3,
+    "dedup_dist": 40,
+    "max_age": 40
+  },
+  "box_size_filters": {
+    "auto_compute": false,
+    "min_w": 5,
+    "min_h": 5,
+    "max_w": 500,
+    "max_h": 500,
+    "min_aspect": 0.2,
+    "max_aspect": 5.0
+  }
+}

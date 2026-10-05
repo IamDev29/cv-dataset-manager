@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models
-from app.schemas import StartTrainingRequest, TrainingJobOut
+from app.schemas import StartTrainingRequest, TrainingJobOut, ActivateJobRequest
 from app.services.training_service import (
     ALLOWED_VARIANTS,
     validate_project_for_training,
@@ -23,6 +23,8 @@ from app.services.training_service import (
     start_training_job,
     cancel_training_job,
 )
+from app.routers.species import save_active_model_atomic
+
 
 router = APIRouter(tags=['training'])
 
@@ -57,7 +59,10 @@ def _job_to_out(job: models.TrainingJob) -> dict:
         'errorMessage': job.error_message,
         'hasPt': bool(job.output_pt_path and Path(job.output_pt_path).exists()),
         'hasOnnx': bool(job.output_onnx_path and Path(job.output_onnx_path).exists()),
+        'isActive': bool(job.is_active),
+        'speciesSlug': job.species_slug,
     }
+
 
 
 # ─── POST /api/projects/{id}/train — Start Training ──────────────────────────
@@ -315,3 +320,144 @@ def download_training_output(
         media_type=media_type,
         filename=filename,
     )
+
+
+# ─── POST /api/projects/{id}/train/jobs/{job_id}/activate — Mark Active ──────
+
+@router.post('/api/projects/{project_id}/train/jobs/{job_id}/activate')
+def activate_training_job(
+    project_id: str,
+    job_id: str,
+    req: ActivateJobRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Mark a completed training job as the active production model for a species.
+    Enforces that the project is single-class to prevent over-counting in wildlife census.
+    Atomically deploys .pt weights and active.json sidecar to shared_models/<slug>/.
+    """
+    species_slug = (req.species_slug or req.speciesSlug or '').strip().lower()
+    if not species_slug:
+        raise HTTPException(status_code=400, detail="species_slug is required.")
+
+    # 1. Validate project exists
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    # 2. Validate job exists and belongs to project
+    job = db.query(models.TrainingJob).filter(
+        models.TrainingJob.id == job_id,
+        models.TrainingJob.project_id == project_id,
+    ).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Training job not found.")
+
+    # 3. Dynamic lookup: Validate species_slug exists in SpeciesModule table
+    species_mod = db.query(models.SpeciesModule).filter(
+        models.SpeciesModule.slug == species_slug
+    ).first()
+    if not species_mod:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Species module '{species_slug}' is not registered in Boxel. Register it in Species Modules first."
+        )
+
+    # 4. Validate job status is completed
+    if job.status != 'completed':
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot activate a job with status '{job.status}'. Only completed training jobs can be activated."
+        )
+
+    # 5. Hard check: Project MUST have exactly 1 class defined
+    classes = project.classes or []
+    if len(classes) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Cannot activate model: Project '{project.name}' has {len(classes)} classes defined. "
+                f"The wildlife census application counts all detections indiscriminately and requires a single-class detector "
+                f"to prevent silent over-counting. Please train with a single class before activating."
+            )
+        )
+
+    # 6. Validate .pt file exists on disk
+    if not job.output_pt_path or not Path(job.output_pt_path).exists():
+        raise HTTPException(
+            status_code=400,
+            detail="The PyTorch (.pt) weights file for this job was not found on disk."
+        )
+
+    # 7. Deactivate any previously active job for this species_slug
+    previously_active = db.query(models.TrainingJob).filter(
+        models.TrainingJob.species_slug == species_slug,
+        models.TrainingJob.is_active == True,
+        models.TrainingJob.id != job.id,
+    ).all()
+    for prev_job in previously_active:
+        prev_job.is_active = False
+
+    # 8. Build traceability metadata
+    metrics_list = []
+    try:
+        metrics_list = json.loads(job.metrics_log or '[]')
+    except Exception:
+        pass
+    final_metrics = metrics_list[-1] if metrics_list else {}
+
+    metadata = {
+        "project_id": project.id,
+        "project_name": project.name,
+        "job_id": job.id,
+        "model_variant": job.model_variant,
+        "species_slug": species_slug,
+        "species_display_name": species_mod.display_name,
+        "activated_at": time.time() * 1000,
+        "epochs": job.epochs,
+        "imgsz": job.imgsz,
+        "classes": [c.name for c in classes],
+        "metrics": final_metrics,
+    }
+
+    # 9. Atomically copy .pt weights and write active.json
+    try:
+        save_active_model_atomic(job.output_pt_path, species_slug, metadata)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to deploy active model files: {str(e)}"
+        )
+
+    # 10. Update job row
+    job.is_active = True
+    job.species_slug = species_slug
+    db.commit()
+    db.refresh(job)
+
+    return _job_to_out(job)
+
+
+# ─── POST /api/projects/{id}/train/jobs/{job_id}/deactivate — Deactivate ─────
+
+@router.post('/api/projects/{project_id}/train/jobs/{job_id}/deactivate')
+def deactivate_training_job(
+    project_id: str,
+    job_id: str,
+    db: Session = Depends(get_db),
+):
+    """Deactivate an active training job."""
+    job = db.query(models.TrainingJob).filter(
+        models.TrainingJob.id == job_id,
+        models.TrainingJob.project_id == project_id,
+    ).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Training job not found.")
+
+    job.is_active = False
+    db.commit()
+    db.refresh(job)
+    return _job_to_out(job)
+

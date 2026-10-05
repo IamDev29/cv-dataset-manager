@@ -1,0 +1,2 @@
+
+python -m PyInstaller KayaDristhi.spec --clean --noconfirm

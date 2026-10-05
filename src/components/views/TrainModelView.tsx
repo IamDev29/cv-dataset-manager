@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Project, ProjectImage, TrainingJob, StartTrainingRequest } from '../../types';
+import { Project, ProjectImage, TrainingJob, StartTrainingRequest, SpeciesModelStatus } from '../../types';
 import { api } from '../../api';
+
 import { Card, CardHeader, CardTitle, Button, Badge, Input, Select, Checkbox } from '../ui';
 import CornerBrackets from '../CornerBrackets';
+import SpeciesModulesModal from '../SpeciesModulesModal';
+import ActivateModelModal from '../ActivateModelModal';
 import {
   Flame,
   Cpu,
@@ -26,6 +29,7 @@ import {
   History,
   AlertTriangle,
   StopCircle,
+  Share2,
 } from 'lucide-react';
 
 export interface TrainModelViewProps {
@@ -38,6 +42,7 @@ export interface TrainModelViewProps {
   onNavigateToAIAssist: () => void;
   onUpdateProjectClasses?: (newClasses: Project['classes']) => void;
 }
+
 
 interface ModelVariantOption {
   id: string;
@@ -148,8 +153,23 @@ export default function TrainModelView({
   const [jobsHistory, setJobsHistory] = useState<TrainingJob[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
+  // Species Modules & Wildlife Deployment State
+  const [speciesModelsStatus, setSpeciesModelsStatus] = useState<SpeciesModelStatus[]>([]);
+  const [isSpeciesModalOpen, setIsSpeciesModalOpen] = useState(false);
+  const [activateModalJob, setActivateModalJob] = useState<TrainingJob | null>(null);
+
   // Elapsed Timer state
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Fetch species models status
+  const loadSpeciesModelsStatus = async () => {
+    try {
+      const data = await api.getSpeciesModelsStatus();
+      setSpeciesModelsStatus(data);
+    } catch (err: any) {
+      console.warn('Failed to load species models status:', err);
+    }
+  };
 
   // Fetch jobs history
   const loadHistory = async () => {
@@ -171,7 +191,9 @@ export default function TrainModelView({
 
   useEffect(() => {
     loadHistory();
+    loadSpeciesModelsStatus();
   }, [project.id]);
+
 
   // Elapsed time tracker for active job
   useEffect(() => {
@@ -427,6 +449,89 @@ export default function TrainModelView({
         </div>
       )}
 
+      {/* ACTIVE WILDLIFE MODELS REGISTRY SUMMARY */}
+      <Card elevation="low" className="p-5 space-y-3 bg-[#14171C]">
+        <CornerBrackets />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#2A2F38]">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-[#1B1F26] border border-[#2A2F38] text-[#00E5A3]">
+              <Share2 size={16} />
+            </div>
+            <div>
+              <h3 className="font-sans font-bold text-sm text-[#E6E9EF]">
+                Active Wildlife Models
+              </h3>
+              <p className="text-[11px] text-[#8B93A1]">
+                Live production models deployed to the wildlife census desktop application.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsSpeciesModalOpen(true)}
+            leftIcon={<Layers size={13} />}
+            className="text-xs"
+          >
+            Manage Species Registry
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+          {speciesModelsStatus.length === 0 ? (
+            <div className="col-span-full py-3 text-center text-xs text-[#8B93A1]">
+              No species modules registered. Click "Manage Species Registry" to add one.
+            </div>
+          ) : (
+            speciesModelsStatus.map((status) => {
+              const isThisProjectActive = status.activeProjectId === project.id;
+
+              return (
+                <div
+                  key={status.speciesSlug}
+                  className={`p-3 rounded-xl border space-y-1.5 ${
+                    status.hasActiveModel
+                      ? isThisProjectActive
+                        ? 'bg-[#00E5A3]/10 border-[#00E5A3]/40 shadow-glow-mint'
+                        : 'bg-[#1B1F26] border-[#2A2F38]'
+                      : 'bg-[#101317] border-[#2A2F38]/50 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-xs text-[#E6E9EF]">
+                      {status.displayName}
+                    </span>
+                    <span className="font-mono text-[10px] text-[#3DA9FC] bg-[#3DA9FC]/15 px-1.5 py-0.5 rounded font-bold">
+                      {status.speciesSlug}
+                    </span>
+                  </div>
+
+                  {status.hasActiveModel ? (
+                    <div className="space-y-1 text-[11px] font-mono">
+                      <div className="flex items-center space-x-1.5 text-[#00E5A3]">
+                        <CheckCircle2 size={12} className="shrink-0" />
+                        <span className="font-bold truncate">
+                          {isThisProjectActive ? 'Active (This Project)' : status.activeProjectName || 'Active'}
+                        </span>
+                      </div>
+                      <p className="text-[#8B93A1] truncate text-[10px]">
+                        Job: <span className="text-[#E6E9EF]">{status.activeJobId}</span>
+                        {status.metadata?.model_variant && ` · ${status.metadata.model_variant}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#8B93A1] font-mono italic">
+                      No model active
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Card>
+
       {/* ACTIVE JOB RUNNING / QUEUED BANNER */}
       {activeJob && (activeJob.status === 'running' || activeJob.status === 'queued') && (
         <Card elevation="high" className="p-6 border-l-4 border-l-[#FFB020] space-y-5 bg-[#14171C]">
@@ -538,9 +643,14 @@ export default function TrainModelView({
                 <Badge variant="success" size="sm">
                   {activeJob.modelVariant}
                 </Badge>
+                {activeJob.isActive && (
+                  <Badge variant="primary" size="sm">
+                    Active: {activeJob.speciesSlug}
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-[#8B93A1]">
-                Weights are ready for download or direct activation in AI Assist auto-annotation.
+                Weights are ready for download, AI Assist auto-annotation, or live deployment to the wildlife app.
               </p>
             </div>
 
@@ -569,7 +679,7 @@ export default function TrainModelView({
 
               {activeJob.hasOnnx && (
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   onClick={() => handleDeployToAIAssist(activeJob)}
                   isLoading={isDeployingToAI}
@@ -578,8 +688,22 @@ export default function TrainModelView({
                   Use in AI Assist
                 </Button>
               )}
+
+              {activeJob.hasPt && (
+                <Button
+                  variant={activeJob.isActive ? 'primary' : 'success'}
+                  size="sm"
+                  onClick={() => setActivateModalJob(activeJob)}
+                  leftIcon={<Share2 size={13} />}
+                >
+                  {activeJob.isActive && activeJob.speciesSlug
+                    ? `Active: ${activeJob.speciesSlug}`
+                    : 'Mark as Active for Wildlife App'}
+                </Button>
+              )}
             </div>
           </div>
+
 
           {/* Final Metrics Summary */}
           {latestMetric && (
@@ -1039,20 +1163,27 @@ export default function TrainModelView({
                   return (
                     <tr key={job.id} className="hover:bg-[#14171C] transition-colors">
                       <td className="py-3">
-                        <Badge
-                          variant={
-                            job.status === 'completed'
-                              ? 'success'
-                              : job.status === 'running'
-                              ? 'warning'
-                              : job.status === 'failed'
-                              ? 'destructive'
-                              : 'neutral'
-                          }
-                          size="sm"
-                        >
-                          {job.status.toUpperCase()}
-                        </Badge>
+                        <div className="flex items-center space-x-1.5">
+                          <Badge
+                            variant={
+                              job.status === 'completed'
+                                ? 'success'
+                                : job.status === 'running'
+                                ? 'warning'
+                                : job.status === 'failed'
+                                ? 'destructive'
+                                : 'neutral'
+                            }
+                            size="sm"
+                          >
+                            {job.status.toUpperCase()}
+                          </Badge>
+                          {job.isActive && (
+                            <Badge variant="primary" size="sm" title={`Active model for ${job.speciesSlug}`}>
+                              Active: {job.speciesSlug}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3 font-semibold text-[#E6E9EF]">
@@ -1101,7 +1232,28 @@ export default function TrainModelView({
                               title="Use this trained model in AI Assist"
                               leftIcon={<Sparkles size={11} />}
                             >
-                              Use in AI Assist
+                              AI Assist
+                            </Button>
+                          )}
+
+                          {job.hasPt && job.status === 'completed' && (
+                            <Button
+                              variant={job.isActive ? 'primary' : 'ghost'}
+                              size="sm"
+                              onClick={() => setActivateModalJob(job)}
+                              title={
+                                job.isActive
+                                  ? `Currently active for ${job.speciesSlug}`
+                                  : 'Mark as active production weights for wildlife census'
+                              }
+                              className={`text-xs ${
+                                job.isActive
+                                  ? 'bg-[#00E5A3]/15 text-[#00E5A3] border-[#00E5A3]/40'
+                                  : 'text-[#8B93A1] hover:text-[#00E5A3]'
+                              }`}
+                              leftIcon={<Share2 size={11} />}
+                            >
+                              {job.isActive && job.speciesSlug ? `Active: ${job.speciesSlug}` : 'Mark Active'}
                             </Button>
                           )}
                         </div>
@@ -1114,6 +1266,38 @@ export default function TrainModelView({
           </div>
         )}
       </Card>
+
+      {/* SPECIES MODULES REGISTRY MODAL */}
+      <SpeciesModulesModal
+        isOpen={isSpeciesModalOpen}
+        onClose={() => setIsSpeciesModalOpen(false)}
+        onModulesChanged={() => {
+          loadSpeciesModelsStatus();
+          loadHistory();
+        }}
+      />
+
+      {/* ACTIVATE MODEL MODAL */}
+      <ActivateModelModal
+        isOpen={Boolean(activateModalJob)}
+        onClose={() => setActivateModalJob(null)}
+        project={project}
+        job={activateModalJob}
+        onActivated={(updatedJob) => {
+          setJobsHistory(prev => prev.map(j => {
+            if (j.id === updatedJob.id) return updatedJob;
+            if (j.speciesSlug === updatedJob.speciesSlug && j.id !== updatedJob.id) {
+              return { ...j, isActive: false };
+            }
+            return j;
+          }));
+          if (activeJob?.id === updatedJob.id) {
+            onActiveJobChange(updatedJob);
+          }
+          loadSpeciesModelsStatus();
+        }}
+      />
     </div>
   );
 }
+

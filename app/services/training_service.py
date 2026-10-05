@@ -421,11 +421,19 @@ def recover_interrupted_jobs() -> int:
 
         for job in stale:
             job.status = 'failed'
-            job.error_message = (
-                'Interrupted by server restart. '
-                'Start a new training job to retry.'
-            )
+            job.error_message = 'Interrupted by server restart or crash'
             job.completed_at = time.time() * 1000
+
+            # Clean up orphaned staging dataset & ultralytics_run directories
+            try:
+                dataset_cleanup = TRAINING_RUNS_DIR / job.id / 'dataset'
+                if dataset_cleanup.exists():
+                    shutil.rmtree(str(dataset_cleanup), ignore_errors=True)
+                ultralytics_cleanup = TRAINING_RUNS_DIR / job.id / 'ultralytics_run'
+                if ultralytics_cleanup.exists():
+                    shutil.rmtree(str(ultralytics_cleanup), ignore_errors=True)
+            except Exception as clean_err:
+                logger.warning(f"[startup] Cleanup error for job {job.id}: {clean_err}")
 
         if stale:
             db.commit()
@@ -435,5 +443,6 @@ def recover_interrupted_jobs() -> int:
             )
 
         return len(stale)
+
     finally:
         db.close()

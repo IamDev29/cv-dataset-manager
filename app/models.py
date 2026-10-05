@@ -60,6 +60,15 @@ class ProjectModel(Base):
     created_at = Column(Float, nullable=False)
     project = relationship('Project', back_populates='model')
 
+class SpeciesModule(Base):
+    """Dynamic registry for wildlife species modules."""
+    __tablename__ = 'species_modules'
+    id = Column(String, primary_key=True)                      # e.g. 'spec-{uuid}'
+    slug = Column(String, unique=True, nullable=False, index=True)  # e.g. 'blackbuck'
+    display_name = Column(String, nullable=False)              # e.g. 'Blackbuck Census'
+    wildlife_config_relpath = Column(String, nullable=False)   # e.g. 'config/blackbuck_config.json'
+    created_at = Column(Float, nullable=False)                  # Unix timestamp in ms
+
 class TrainingJob(Base):
     """Tracks a YOLO model training run for a project."""
     __tablename__ = 'training_jobs'
@@ -79,4 +88,7 @@ class TrainingJob(Base):
     error_message = Column(Text, nullable=True)
     output_pt_path = Column(String, nullable=True)                 # disk path to best.pt
     output_onnx_path = Column(String, nullable=True)               # disk path to best.onnx
+    is_active = Column(Boolean, default=False, nullable=False)     # True if marked active for wildlife deployment
+    species_slug = Column(String, nullable=True)                   # Species slug this model is activated for
     project = relationship('Project', back_populates='training_jobs')
+

@@ -141,6 +141,46 @@ class AcceptSuggestionsRequest(BaseModel):
 class RejectSuggestionsRequest(BaseModel):
     boxIds: List[str]  # empty list means reject ALL
 
+class SpeciesModuleBase(BaseModel):
+    slug: str
+    displayName: str
+    wildlifeConfigRelpath: str
+
+class CreateSpeciesModuleRequest(BaseModel):
+    slug: str
+    display_name: Optional[str] = None
+    displayName: Optional[str] = None
+    wildlife_config_relpath: Optional[str] = None
+    wildlifeConfigRelpath: Optional[str] = None
+
+class SpeciesModuleOut(BaseModel):
+    id: str
+    slug: str
+    displayName: str
+    wildlifeConfigRelpath: str
+    createdAt: float
+    hasActiveModel: bool = False
+    activeJobId: Optional[str] = None
+    activeProjectId: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ActivateJobRequest(BaseModel):
+    species_slug: Optional[str] = None
+    speciesSlug: Optional[str] = None
+
+class SpeciesModelStatus(BaseModel):
+    speciesSlug: str
+    displayName: str
+    wildlifeConfigRelpath: str
+    hasActiveModel: bool = False
+    activeJobId: Optional[str] = None
+    activeProjectId: Optional[str] = None
+    activeProjectName: Optional[str] = None
+    activatedAt: Optional[float] = None
+    metadata: Optional[Dict[str, Any]] = None
+
 # ─── Training schemas ─────────────────────────────────────────────────────────
 
 class StartTrainingRequest(BaseModel):
@@ -167,6 +207,9 @@ class TrainingJobOut(BaseModel):
     errorMessage: Optional[str] = None
     hasPt: bool = False
     hasOnnx: bool = False
+    isActive: bool = False
+    speciesSlug: Optional[str] = None
 
     class Config:
         from_attributes = True
+
